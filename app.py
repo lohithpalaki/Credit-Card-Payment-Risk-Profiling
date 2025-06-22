@@ -110,7 +110,7 @@ def batch_prediction_page():
             df['Credit_Utilization'] = df['Credit_Card_Balance'] / df['Credit_Limit'].replace(0, np.nan)
             df['Credit_Utilization'] = df['Credit_Utilization'].fillna(0)
 
-            model = joblib.load("logistic_regression_model.pkl")
+            model = joblib.load("lr_credit_model.pkl")
             preds = model.predict(df[required_cols + ['Credit_Utilization']])
 
             df['Missed_Payment_Prediction'] = ["❌ Likely to Miss" if p == 0 else "✅ Unlikely to Miss" for p in preds]
