@@ -48,9 +48,10 @@ def login_page():
 def single_prediction_page():
     st.title("📌 Predict Missed Payment Risk")
 
-    # Input fields (same features used in model training)
+    # Input fields
     Age = st.number_input("Age", 18, 100, 30)
     Gender = st.selectbox("Gender", ["Male", "Female", "Other"])
+    Account_Type = st.selectbox("Account Type", ["Savings", "Current"])
     Account_Balance = st.number_input("Account Balance", 0.0, 1e7, 50000.0)
     Transaction_Amount = st.number_input("Transaction Amount", 0.0, 1e6, 10000.0)
     Account_Balance_After_Transaction = st.number_input("Balance After Transaction", 0.0, 1e7, 40000.0)
@@ -62,12 +63,12 @@ def single_prediction_page():
     Minimum_Payment_Due = st.number_input("Minimum Payment Due", 0.0, 1e6, 5000.0)
 
     if st.button("Predict Missed Payment"):
-        # Feature Engineering
         Credit_Utilization = Credit_Card_Balance / Credit_Limit if Credit_Limit > 0 else 0.0
 
-        # Create input DataFrame matching training structure
         input_data = pd.DataFrame([{
             'Age': Age,
+            'Gender': Gender,
+            'Account_Type': Account_Type,
             'Account_Balance': Account_Balance,
             'Transaction_Amount': Transaction_Amount,
             'Account_Balance_After_Transaction': Account_Balance_After_Transaction,
@@ -80,10 +81,18 @@ def single_prediction_page():
             'Credit_Utilization': Credit_Utilization
         }])
 
-        # Load trained model
+        # Load model
         model = joblib.load("lr_credit_model.pkl")
-        prediction = model.predict(input_data)[0]
 
+        # One-hot encode and align columns
+        input_encoded = pd.get_dummies(input_data, drop_first=True)
+        missing_cols = set(model.feature_names_in_) - set(input_encoded.columns)
+        for col in missing_cols:
+            input_encoded[col] = 0
+        input_encoded = input_encoded[model.feature_names_in_]
+
+        # Predict
+        prediction = model.predict(input_encoded)[0]
         label_map = {0: "❌ Likely to Miss Payment", 1: "✅ Unlikely to Miss Payment"}
         st.success(f"Prediction: {label_map[prediction]}")
 
@@ -98,27 +107,33 @@ def batch_prediction_page():
         df = pd.read_csv(uploaded_file)
         st.write("📄 Uploaded Data", df.head())
 
-        # Required columns in uploaded CSV
         required_cols = [
-            'Age', 'Account_Balance', 'Transaction_Amount', 'Account_Balance_After_Transaction',
+            'Age', 'Gender', 'Account_Type', 'Account_Balance',
+            'Transaction_Amount', 'Account_Balance_After_Transaction',
             'Loan_Amount', 'Interest_Rate', 'Loan_Term',
             'Credit_Limit', 'Credit_Card_Balance', 'Minimum_Payment_Due'
         ]
 
         if all(col in df.columns for col in required_cols):
-            # Feature engineering
             df['Credit_Utilization'] = df['Credit_Card_Balance'] / df['Credit_Limit'].replace(0, np.nan)
             df['Credit_Utilization'] = df['Credit_Utilization'].fillna(0)
 
             model = joblib.load("lr_credit_model.pkl")
-            preds = model.predict(df[required_cols + ['Credit_Utilization']])
 
+            df_encoded = pd.get_dummies(df, drop_first=True)
+            missing_cols = set(model.feature_names_in_) - set(df_encoded.columns)
+            for col in missing_cols:
+                df_encoded[col] = 0
+            df_encoded = df_encoded[model.feature_names_in_]
+
+            preds = model.predict(df_encoded)
             df['Missed_Payment_Prediction'] = ["❌ Likely to Miss" if p == 0 else "✅ Unlikely to Miss" for p in preds]
+
             st.write("📊 Predictions", df[['Missed_Payment_Prediction']])
             csv = df.to_csv(index=False).encode('utf-8')
             st.download_button("⬇ Download Results", csv, "missed_payment_predictions.csv", "text/csv")
         else:
-            st.error("CSV missing required columns.")
+            st.error("CSV is missing required columns.")
 
 # --------------------------
 # App Routing
