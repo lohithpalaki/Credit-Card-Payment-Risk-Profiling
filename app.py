@@ -23,7 +23,7 @@ if st.session_state.logged_in:
     if st.sidebar.button("Logout"):
         st.session_state.logged_in = False
         st.session_state.page = "Login"
-        st.experimental_rerun()
+        st.rerun()
 else:
     st.session_state.page = "Login"
 
@@ -81,7 +81,7 @@ def single_prediction_page():
         }])
 
         # Load trained model
-        model = joblib.load("logistic_regression_model.pkl")
+        model = joblib.load("lr_credit_model.pkl")
         prediction = model.predict(input_data)[0]
 
         label_map = {0: "❌ Likely to Miss Payment", 1: "✅ Unlikely to Miss Payment"}
