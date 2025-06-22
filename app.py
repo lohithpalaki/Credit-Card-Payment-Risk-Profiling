@@ -57,7 +57,7 @@ def single_prediction_page():
     Account_Balance_After_Transaction = st.number_input("Balance After Transaction", 0.0, 1e7, 40000.0)
     Loan_Amount = st.number_input("Loan Amount", 0.0, 1e7, 200000.0)
     Interest_Rate = st.slider("Interest Rate (%)", 0.0, 25.0, 8.5)
-    Loan_Term = st.selectbox("Loan Term (months)", [12, 24, 36, 48, 60])
+    Loan_Term = st.selectbox("Loan Term (months)", [12,24,36,48,60])
     Credit_Limit = st.number_input("Credit Limit", 1000.0, 1e6, 100000.0)
     Credit_Card_Balance = st.number_input("Credit Card Balance", 0.0, 1e6, 20000.0)
     Minimum_Payment_Due = st.number_input("Minimum Payment Due", 0.0, 1e6, 5000.0)
